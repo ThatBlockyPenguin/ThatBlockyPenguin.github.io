@@ -11,13 +11,15 @@ import customProps from 'npm:postcss-custom-properties';
 import propertyLookup from 'npm:postcss-property-lookup';
 import calc from 'npm:postcss-calc';
 
-const outPath = './publish';
+const publishPath = './publish';
 const autoprefixerConfig = {
-  overrideBrowsersList: [ '> 0.2%, not dead', 'last 3 versions' ]
+  overrideBrowsersList: ['> 0.2%, not dead', 'last 3 versions']
 };
 
+
+Deno.removeSync(publishPath, { recursive: true });
 const cssFiles = getDirContents('./css');
-const htmlFiles = getDirContents('./html');
+const htmlFiles = getDirContents('./html', './');
 
 for (const file of cssFiles) {
   postcss([
@@ -35,8 +37,8 @@ for (const file of cssFiles) {
       ensureDirSync(dirname(outPath))
 
       Deno.writeTextFile(outPath, result.css);
-      
-      if(result.map)
+
+      if (result.map)
         Deno.writeTextFile(outPath + '.map', result.map.toString());
     });
 }
@@ -46,16 +48,16 @@ for (const file of htmlFiles) {
   Deno.writeTextFile(file.outPath, minifyHTML(file.contents, { minifyCSS: true, minifyJS: true }))
 }
 
-function getDirContents(path: string): ProcessableFile[] {
+function getDirContents(path: string, outPath?: string): ProcessableFile[] {
   ensureDirSync(path);
 
   const result = new Array<ProcessableFile>;
-  
+
   for (const entry of walkSync(path)) {
-    if(entry.isFile)
+    if (entry.isFile)
       result.push({
         inPath: entry.path,
-        outPath: join(outPath, entry.path),
+        outPath: join(publishPath, outPath ? join(outPath, entry.name) : entry.path),
         contents: Deno.readTextFileSync(entry.path),
       });
   }
