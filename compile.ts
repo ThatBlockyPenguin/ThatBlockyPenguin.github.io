@@ -1,34 +1,38 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-net
 
-import { join, dirname } from 'https://deno.land/std@0.200.0/path/mod.ts';
-import { ensureDirSync, walkSync } from 'https://deno.land/std@0.200.0/fs/mod.ts';
+import { join, dirname, basename } from 'https://deno.land/std@0.200.0/path/mod.ts';
+import { ensureDirSync, walkSync, copySync } from 'https://deno.land/std@0.200.0/fs/mod.ts';
 import postcss from 'https://deno.land/x/postcss@8.4.16/mod.js';
 import autoprefixer from 'https://deno.land/x/postcss_autoprefixer@0.2.8/mod.js';
 import { minifyHTML } from 'https://deno.land/x/minifier@v1.1.1/mod.ts';
 import nesting from 'npm:postcss-nesting';
 import csso from 'npm:postcss-csso';
-import customProps from 'npm:postcss-custom-properties';
-import propertyLookup from 'npm:postcss-property-lookup';
+import customPropsResolver from 'npm:postcss-custom-properties';
+import existingPropertyLookup from 'npm:postcss-property-lookup';
 import calc from 'npm:postcss-calc';
+import importUrl from 'npm:postcss-partial-import';
+import mixins from 'npm:postcss-mixins';
 
 const publishPath = './publish';
-const autoprefixerConfig = {
-  overrideBrowsersList: ['> 0.2%, not dead', 'last 3 versions']
-};
+const browserlist = ['> 0.5%', 'not dead', 'last 3 versions'];
 
-
+ensureDirSync(publishPath);
 Deno.removeSync(publishPath, { recursive: true });
 const cssFiles = getDirContents('./css');
 const htmlFiles = getDirContents('./html', './');
+ensureDirSync('./assets');
+copySync('./assets', join(publishPath, 'assets'));
 
 for (const file of cssFiles) {
-  postcss([
-    autoprefixer(autoprefixerConfig),
+  await postcss([
+    importUrl({  }),
+    mixins(),
+    existingPropertyLookup(),
     nesting,
-    csso({ comments: false }),
-    customProps(),
-    propertyLookup(),
-    calc({ mediaQueries: true, selectors: true })
+    autoprefixer({ overrideBrowsersList: browserlist }),
+    customPropsResolver(),
+    calc({ mediaQueries: true, selectors: true }),
+    csso({ comments: false })
   ])
     .process(file.contents, { from: file.inPath, to: file.outPath })
     .then(result => {
@@ -57,7 +61,7 @@ function getDirContents(path: string, outPath?: string): ProcessableFile[] {
     if (entry.isFile)
       result.push({
         inPath: entry.path,
-        outPath: join(publishPath, outPath ? join(outPath, entry.name) : entry.path),
+        outPath: join(publishPath, outPath ? join(outPath, entry.name) : join('assets', entry.path)),
         contents: Deno.readTextFileSync(entry.path),
       });
   }
