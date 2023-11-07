@@ -1,0 +1,44 @@
+@define-mixin inline-item {
+  display: inline;
+  vertical-align: middle;
+  padding: 0.2em 0.3em;
+  box-decoration-break: clone;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Ubuntu', sans-serif;
+}
+
+main {
+  padding: 0.5em;
+  line-height: 1.4em;
+}
+
+code {
+  font-family: 'Share Tech Mono', monospace;
+  word-wrap: break-word;
+  border-radius: 5px;
+  box-shadow: inset 0 0 10px black;
+  font-size: large;
+}
+
+:not(pre) > code {
+  @mixin inline-item;
+}
+
+pre code {
+  display: block;
+  padding: 0.5em 1em;
+  white-space: pre;
+  border-radius: 12px;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto;
+}
